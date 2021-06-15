@@ -10,7 +10,15 @@ import mysql.connector
 bot = commands.Bot(command_prefix=config.bot_prefix)
 client = discord.Client()
 
+<<<<<<< HEAD
 cursor = config.db_connection.cursor()
+=======
+db = MySQLdb.connect('localhost', 'root', 'root', 'vctimer-bot')
+cursor = db.cursor()
+
+token = 'token'
+id = 838384802583150594
+>>>>>>> 5c52bc229ed371526a036a55eeee07d7d2746419
 
 channels = []
 
