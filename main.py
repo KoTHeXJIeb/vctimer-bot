@@ -2,17 +2,15 @@
 import discord
 from discord.ext import commands
 
-import time
-import MySQLdb
+import config
 
-bot = commands.Bot(command_prefix='/')
+import time
+import mysql.connector
+
+bot = commands.Bot(command_prefix=config.bot_prefix)
 client = discord.Client()
 
-db = MySQLdb.connect('localhost', 'root', 'root', 'vctimer-bot')
-cursor = db.cursor()
-
-token = 'ODM4Mzg0ODAyNTgzMTUwNTk0.YI6UsQ.lnE45CDeUG6nZzwvO7hF6Q24s6k'
-id = 838384802583150594
+cursor = config.db_connection.cursor()
 
 channels = []
 
@@ -37,6 +35,9 @@ async def addChannels(ctx):
     for i in channels:
         await ctx.send(i)
         channels_names.append(i)
+    end = time.time()
+    res = end - start
+    await ctx.send('Channels have been succsessfully added. It took ' + str(res) + ' seconds')
     main(channels_names)
 
 @bot.command(help='Checks if user is in the voice channel')
@@ -59,22 +60,19 @@ def main(channel_names):
     #         channel = client.get_channel(i)
     #         channel_names.append(channel)
 
-    end = time.time()
-
     member_ids = []
     for i in channel_names:
         #members = i.members
         #members.append(i.members)
         temp = i.voice_states.keys()
-        member_ids.append(temp)  
+        member_ids.append(temp) 
 
-    for k in list(member_ids):
-        for j in k:
-            str(k).replace("dict_keys(", "")
-            users.users[str(k)] = 0
+    save()
 
-    print(users.users)
-    print(end - start)
+    # for k in list(member_ids):
+    #     for j in k:
+    #         str(k).replace("dict_keys(", "")
+    #         users.users[str(k)] = 0
 
     # memids = []
     # for member in members:
@@ -89,17 +87,30 @@ def createEmbed(title, description):
 def save():
     for i in member_ids:
         temp = str(i)
-        sql = "INSERT INTO 'users'(user_id, timeinvoice) VALUES(temp, '123')"
-    cursor.execute(sql)
-    db.commit()
-    cursor.close()
+        sql = 'INSERT INTO USERS(user_id, timeinvoice) VALUES(' + temp + ', "123")'
+    try:
+        cursor.execute(sql)
+    except Exception as e:
+        print('Error! Details: ' + str(e))  
 
 
 def load():
-    sql = "SELECT * FROM 'users'"
-    cursor.execute(sql)
-    print('Data have been loaded from DB')
-    db.commit()
-    cursor.close()
+    global users, timeinvoice
 
-bot.run(token)
+    users, timeinvoice = [], []
+    sql = "SELECT * FROM USERS"
+    
+    try:
+        cursor.execute(sql)
+
+        output = cursor.fetchall()
+        if len(output) <= 0:
+            return
+        else:
+            users.append(output[1])
+            timeinvoice.append(output[2])
+    except Exception as e:
+        print('Error! Details: ' + str(e))
+    print(users, timeinvoice)
+
+bot.run(config.token)
