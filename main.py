@@ -1,6 +1,7 @@
 
 import discord
 from discord.ext import commands
+from discord.ext.commands.core import has_permissions
 
 import config
 
@@ -10,15 +11,8 @@ import mysql.connector
 bot = commands.Bot(command_prefix=config.bot_prefix)
 client = discord.Client()
 
-<<<<<<< HEAD
-cursor = config.db_connection.cursor()
-=======
-db = MySQLdb.connect('localhost', 'root', 'root', 'vctimer-bot')
+db = config.db_connection
 cursor = db.cursor()
-
-token = 'token'
-id = 838384802583150594
->>>>>>> 5c52bc229ed371526a036a55eeee07d7d2746419
 
 channels = []
 
@@ -26,11 +20,14 @@ channels = []
 async def on_ready():
     load()
     print('Bot is ready to go!')
+    print(users, timeinvoice)
+    await bot.change_presence(activity=discord.Game('meow OwO'))
 
 @bot.command()
+@commands.has_permissions(view_audit_log=True)
 async def changePrefix(ctx, newPrefix):
-    bot.command_prefix = newPrefix
-    await ctx.send('Changes prefix to ' + newPrefix)
+    bot.command_prefix = newPrefix + "!"
+    await ctx.send('Changes prefix to ' + newPrefix + "!")
 
 @bot.command(help='Adds all server`s voice channels to the list (used once before start)')
 async def addChannels(ctx):
@@ -41,21 +38,26 @@ async def addChannels(ctx):
 
     channels_names = []
     for i in channels:
-        await ctx.send(i)
         channels_names.append(i)
     end = time.time()
     res = end - start
-    await ctx.send('Channels have been succsessfully added. It took ' + str(res) + ' seconds')
+    await ctx.send('Channels have been added. It took ' + str(round(res)) + ' seconds')
     main(channels_names)
 
-@bot.command(help='Checks if user is in the voice channel')
-async def checkUser(ctx, member : discord.Member):
-    voice_state = member.voice
+# @bot.command(help='Checks if user is in the voice channel')
+# async def checkUser(ctx, member : discord.Member):
+#     voice_state = member.voice
 
-    if voice_state is None:
-        return await ctx.send(f'{member} is not in the voice channel!')
-    else:
-        return await ctx.send(f'{member} is in the voice channel!')
+#     if voice_state is None:
+#         return await ctx.send(f'{member} is not in the voice channel!')
+#     else:
+#         return await ctx.send(f'{member} is in the voice channel!')
+
+@bot.command()
+async def createRole(ctx, roleName):
+    guild = ctx.guild
+    await guild.create_role(name=roleName)
+    await ctx.send(f"Role {roleName} was created!")
 
 def main(channel_names):
 
@@ -75,7 +77,7 @@ def main(channel_names):
         temp = i.voice_states.keys()
         member_ids.append(temp) 
 
-    save()
+    save(member_ids)
 
     # for k in list(member_ids):
     #     for j in k:
@@ -87,15 +89,13 @@ def main(channel_names):
     #     memids.append(member.id)
     # print(memids)
 
-
 def createEmbed(title, description):
     embed = discord.Embed(title=title, description=description, color=discord.Embed.Empty)
     return embed
 
-def save():
-    for i in member_ids:
-        temp = str(i)
-        sql = 'INSERT INTO USERS(user_id, timeinvoice) VALUES(' + temp + ', "123")'
+def save(ids):
+    for i in ids:
+        sql = 'INSERT INTO users(user_id, timeinvoice) VALUES(' + str(i) + ', "123")'
     try:
         cursor.execute(sql)
     except Exception as e:
@@ -119,6 +119,5 @@ def load():
             timeinvoice.append(output[2])
     except Exception as e:
         print('Error! Details: ' + str(e))
-    print(users, timeinvoice)
 
 bot.run(config.token)
