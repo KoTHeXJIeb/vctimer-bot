@@ -22,7 +22,7 @@ async def on_ready():
     print('Bot is ready to go!')
     await bot.change_presence(activity=discord.Game('meow OwO'))
 
-@bot.command()
+@bot.command(help='Changes bot prefix (automatically adds "!" at the end of the prefix)')
 @commands.has_permissions(view_audit_log=True)
 async def changePrefix(ctx, newPrefix):
     bot.command_prefix = newPrefix + "!"
@@ -33,18 +33,14 @@ async def addChannels(ctx):
     global channels
 
     channels = ctx.guild.voice_channels
-    print(channels)
-    channels_names = []
+    
+    channel_ids = []
 
     for i in channels:
-        if i.members is not None:
-            for i in channels:
-                channels_names.append(i)
-        else:
-            pass
+        channel_ids.append(i.id)
     await ctx.send('Channels have been added.')
-    print(channels_names)
-    main(channels_names)
+    print(channel_ids)
+    main(channel_ids)
 
 # @bot.command(help='Checks if user is in the voice channel')
 # async def checkUser(ctx, member : discord.Member):
@@ -55,15 +51,15 @@ async def addChannels(ctx):
 #     else:
 #         return await ctx.send(f'{member} is in the voice channel!')
 
-@bot.command()
+@bot.command(help='Creates role')
 async def createRole(ctx, roleName):
     guild = ctx.guild
     await guild.create_role(name=roleName)
     await ctx.send(f"Role {roleName} was created!")
 
-def main(channel_names):
+def main(channel_ids):
 
-    global member_ids, end
+    global member_ids
 
     # for i in channel_names:
     #     if i == None:
@@ -73,18 +69,33 @@ def main(channel_names):
     #         channel_names.append(channel)
 
     member_ids = []
-    for i in channel_names:
+
+    for i in channel_ids:
+        vc = bot.get_channel(id=i)        
         #members = i.members
         #members.append(i.members)
-        temp = i.voice_states.keys()
+        temp = vc.voice_states.keys()
         if temp is None:
-            pass
+            break
         else:
-            member_ids.append(temp) 
-
+            temp = str(temp)
+            temp = temp[:len(temp) - 2]
+            temp = temp[::-1]
+            temp = temp[:len(temp) - 11]
+            temp = temp[::-1]
+            member_ids.append(temp)
+    while '' in member_ids:
+        member_ids.remove('')
     print(member_ids)
 
-    load()
+    n = 0
+
+    while True:
+        n += 1
+        save(member_ids, n)
+        time.sleep(1)
+
+    # load()
 
     # save(member_ids)
 
@@ -102,9 +113,9 @@ def createEmbed(title, description):
     embed = discord.Embed(title=title, description=description, color=discord.Embed.Empty)
     return embed
 
-def save(ids):
+def save(ids, n):
     for i in ids:
-        sql = "INSERT INTO users (id, user_id, timeinvoice) VALUES(NULL, " + str(i) + ", '123')"
+        sql = "INSERT INTO users (id, user_id, timeinvoice) VALUES(NULL, " + str(i) + ", " + str(n) + ")"
     try:
         cursor.execute(sql)
         db.commit()
