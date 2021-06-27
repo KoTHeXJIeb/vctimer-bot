@@ -14,13 +14,12 @@ client = discord.Client()
 db = config.db_connection
 cursor = db.cursor()
 
-channels = []
+users, timeinvoice, channels = [], [], []
 
 @bot.event
 async def on_ready():
     load()
     print('Bot is ready to go!')
-    print(users, timeinvoice)
     await bot.change_presence(activity=discord.Game('meow OwO'))
 
 @bot.command()
@@ -31,17 +30,20 @@ async def changePrefix(ctx, newPrefix):
 
 @bot.command(help='Adds all server`s voice channels to the list (used once before start)')
 async def addChannels(ctx):
-    global channels, start
+    global channels
 
-    start = time.time()
     channels = ctx.guild.voice_channels
-
+    print(channels)
     channels_names = []
+
     for i in channels:
-        channels_names.append(i)
-    end = time.time()
-    res = end - start
-    await ctx.send('Channels have been added. It took ' + str(round(res)) + ' seconds')
+        if i.members is not None:
+            for i in channels:
+                channels_names.append(i)
+        else:
+            pass
+    await ctx.send('Channels have been added.')
+    print(channels_names)
     main(channels_names)
 
 # @bot.command(help='Checks if user is in the voice channel')
@@ -75,9 +77,16 @@ def main(channel_names):
         #members = i.members
         #members.append(i.members)
         temp = i.voice_states.keys()
-        member_ids.append(temp) 
+        if temp is None:
+            pass
+        else:
+            member_ids.append(temp) 
 
-    save(member_ids)
+    print(member_ids)
+
+    load()
+
+    # save(member_ids)
 
     # for k in list(member_ids):
     #     for j in k:
@@ -95,17 +104,15 @@ def createEmbed(title, description):
 
 def save(ids):
     for i in ids:
-        sql = 'INSERT INTO users(user_id, timeinvoice) VALUES(' + str(i) + ', "123")'
+        sql = "INSERT INTO users (id, user_id, timeinvoice) VALUES(NULL, " + str(i) + ", '123')"
     try:
         cursor.execute(sql)
+        db.commit()
     except Exception as e:
         print('Error! Details: ' + str(e))  
 
-
 def load():
-    global users, timeinvoice
-
-    users, timeinvoice = [], []
+  
     sql = "SELECT * FROM USERS"
     
     try:
@@ -113,10 +120,12 @@ def load():
 
         output = cursor.fetchall()
         if len(output) <= 0:
-            return
+            pass
         else:
-            users.append(output[1])
-            timeinvoice.append(output[2])
+            for i in output:
+                users.append(i[1])
+                timeinvoice.append(i[2])
+        print(users, timeinvoice)
     except Exception as e:
         print('Error! Details: ' + str(e))
 
